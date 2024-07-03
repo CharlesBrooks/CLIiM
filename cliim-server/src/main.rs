@@ -12,6 +12,7 @@ fn handle_client(stream: &mut TcpStream, clients: &mut Arc<Mutex<Vec<TcpStream>>
                     break;
                 }
                 let message = String::from_utf8_lossy(&buffer[..bytes_read]);
+                println!("{} from : {}", message, stream.peer_addr().unwrap());
                 let clients = clients.lock().unwrap();
 
                 clients.iter().for_each(|mut client| {
@@ -25,7 +26,7 @@ fn handle_client(stream: &mut TcpStream, clients: &mut Arc<Mutex<Vec<TcpStream>>
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
-    let clients = Arc::new(Mutex::new(Vec::new()));
+    let clients: Arc<Mutex<Vec<TcpStream>>> = Arc::new(Mutex::new(Vec::new()));
 
     println!("Server started on port 7878");
     println!("Waiting for connections...");
