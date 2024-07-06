@@ -8,7 +8,7 @@ fn main() {
     
     thread::spawn(move || {
         let mut buffer = [0; 512];
-        'incoming_message: loop {
+         loop {
             match incoming_message_stream.read(&mut buffer) {
                 Ok(bytes_read) => {
                     if bytes_read > 0 {
@@ -20,7 +20,7 @@ fn main() {
         }
     });
 
-    'input_loop: loop {
+    loop {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         stream.write_all(input.as_bytes()).unwrap();
