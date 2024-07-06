@@ -1,13 +1,8 @@
-use std::net::TcpListener;
-
 mod client_manager;
-use client_manager::client_manager::ClientManager;
+mod server;
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let server = server::Server::new(String::from("cliim-server"), String::from("127.0.0.1:7878"));
 
-    println!("Server started on port 7878");
-
-    let cm = ClientManager::new();
-    cm.start(listener);
+    server.start();
 }

@@ -1,19 +1,20 @@
-use std::{io::{Read, Write}, net::{TcpListener, TcpStream}, sync::{Arc, Mutex}, thread};
+use std::{ io::{ Read, Write }, net::{ TcpListener, TcpStream }, sync::{ Arc, Mutex }, thread };
 
 pub struct ClientManager {
-    pub clients: Arc<Mutex<Vec<TcpStream>>>
+    pub clients: Arc<Mutex<Vec<TcpStream>>>,
 }
 
-impl ClientManager { 
+impl ClientManager {
     pub fn new() -> Self {
         Self {
-            clients: Arc::new(Mutex::new(Vec::new()))
+            clients: Arc::new(Mutex::new(Vec::new())),
         }
     }
 
     pub fn start(&self, listener: TcpListener) {
         println!("Waiting for connections...");
-        for stream in listener.incoming() {
+
+        listener.incoming().for_each(|stream| {
             let mut stream = stream.unwrap();
             let mut clients = Arc::clone(&self.clients);
             clients.lock().unwrap().push(stream.try_clone().unwrap());
@@ -21,7 +22,7 @@ impl ClientManager {
             thread::spawn(move || {
                 Self::handle_client(&mut stream, &mut clients);
             });
-        }
+        });
     }
 
     fn handle_client(stream: &mut TcpStream, clients: &mut Arc<Mutex<Vec<TcpStream>>>) {
@@ -35,12 +36,22 @@ impl ClientManager {
                     let message = String::from_utf8_lossy(&buffer[..bytes_read]);
                     println!("{} from : {}", message, stream.peer_addr().unwrap());
                     let clients = clients.lock().unwrap();
-    
+
                     clients.iter().for_each(|mut client| {
                         client.write_all(message.as_bytes()).unwrap();
                     });
-                },
-                Err(_) => {println!("Error reading from stream");},
+                }
+                Err(_) => {
+                    match stream.shutdown(std::net::Shutdown::Both) {
+                        Ok(_) => {
+                            println!("Client disconnected : {}", stream.peer_addr().unwrap());
+                            break;
+                        }
+                        Err(_) => {
+                            break;
+                        }
+                    }
+                }
             }
         }
     }
