@@ -37,9 +37,14 @@ impl ClientManager {
                     println!("{} from : {}", message, stream.peer_addr().unwrap());
                     let clients = clients.lock().unwrap();
 
-                    clients.iter().for_each(|mut client| {
-                        client.write_all(message.as_bytes()).unwrap();
-                    });
+                    clients
+                        .iter()
+                        .filter(|client| {
+                            client.peer_addr().unwrap() != stream.peer_addr().unwrap()
+                        })
+                        .for_each(|mut client| {
+                            client.write_all(message.as_bytes()).unwrap();
+                        });
                 }
                 Err(_) => {
                     match stream.shutdown(std::net::Shutdown::Both) {
@@ -47,7 +52,8 @@ impl ClientManager {
                             println!("Client disconnected : {}", stream.peer_addr().unwrap());
                             break;
                         }
-                        Err(_) => {
+                        Err(error) => {
+                            println!("Failed to disconnect client : {}", error);
                             break;
                         }
                     }
